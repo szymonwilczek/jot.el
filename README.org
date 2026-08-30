@@ -1,0 +1,136 @@
+#+TITLE: jot.el
+#+AUTHOR: Szymon Wilczek
+#+LANGUAGE: en
+#+OPTIONS: toc:nil num:nil
+
+I spend most of my time in the terminal, and I use [[https://github.com/szymonwilczek/tmux-jot][tmux-jot]] every single day. Hitting a single shortcut to bring up a quick scratchpad right over my workspace - without messing up my pane layout or switching windows - is just too convenient to give up. I know that Emacs probably has multiple ways to do that, but I'm just too used to doing it this way. It was easier to port this plugin from tmux to Emacs than learning to do that properly.
+
+=jot.el= is the GNU Emacs reincarnation of that workflow. It brings up the scratchpad in a floating child frame, works cleanly with Org-mode, and shares the same note storage with [[https://github.com/szymonwilczek/tmux-jot][tmux-jot]]. If that sounds like something you'd use, feel free to give it a spin.
+
+** Features
+
+- *Workspace-aware*: Automatically scopes notes to your current project or workspace (=persp-mode=, =perspective.el=, =tab-bar-mode=, or =project.el=).
+- *Compatible with [[http://github.com/szymonwilczek/tmux-jot][tmux-jot]]*: Uses the same storage directory (=~/.local/share/tmux-jot=), so notes stay in sync between Emacs and tmux.
+- *Floating popup*: Opens in an undecorated child frame positioned in the top-right corner (*configurable*)
+- *Live resizing*: Resize the frame on the fly using =M-+= or =M--= (*also configurable*)
+- *Quick search & picker*: Pick or create notes via =completing-read= (Vertico, Ivy, Helm), and search contents with =consult-ripgrep= / =rg=.
+- *Org-mode by default*: Notes open in =org-mode= with buffer-local keybindings.
+
+** Requirements
+
+- GNU Emacs >= 31.1 (compiled with GUI / child frame support)
+- =rg= (ripgrep) or =consult= for content searching
+
+** Installation
+
+*** Native =package-vc= (Emacs 30+)
+
+#+begin_src emacs-lisp
+  (use-package jot
+    :vc (:url "https://github.com/szymonwilczek/jot.el")
+    :config
+    (jot-mode 1))
+#+end_src
+
+*** Elpaca
+
+#+begin_src emacs-lisp
+  (use-package jot
+    :ensure (:host github :repo "szymonwilczek/jot.el")
+    :config
+    (jot-mode 1))
+#+end_src
+
+*** Straight.el
+
+#+begin_src emacs-lisp
+  (use-package jot
+    :straight (:host github :repo "szymonwilczek/jot.el")
+    :config
+    (jot-mode 1))
+#+end_src
+
+*** Manual
+
+#+begin_src sh
+  git clone https://github.com/szymonwilczek/jot.el ~/.config/emacs/lisp/jot
+#+end_src
+
+#+begin_src emacs-lisp
+  (add-to-list 'load-path "~/.config/emacs/lisp/jot")
+  (require 'jot)
+  (jot-mode 1)
+#+end_src
+
+** Keybindings
+
+*** Global Keybindings (=jot-mode-map=)
+
+| Action            | Default Binding   | Description                                                        |
+|-------------------+-------------------+--------------------------------------------------------------------|
+| =jot-toggle=        | ~C-c j~             | Toggle session note. If none linked, opens picker. If open, hides. |
+| =jot-find-note=     | ~C-c M-j~           | Note selector (~completing-read~). Select or create new note.        |
+| =jot-search=        | ~C-c M-w~           | Content search across all notes (~consult-ripgrep~ / ~rg~).            |
+| =jot-doctor=        | ~C-c M-i~           | Diagnostic report buffer (paths, links, geometry, notes).          |
+| =jot-cleanup=       | ~C-c M-k~           | Prunes dangling broken session symlinks and inactive buffers.      |
+| =jot-increase-size= | ~C-c M-=~ / ~C-c M-+~ | Increases popup width and height by 5% delta.                      |
+| =jot-decrease-size= | ~C-c M--~ / ~C-c M-_~ | Decreases popup width and height by 5% delta.                      |
+| =jot-reset-size=    | ~C-c M-r~           | Resets popup size delta back to 0%.                                |
+
+*** In-Buffer Keybindings (=jot-buffer-mode-map=)
+
+Active inside the floating note buffer:
+
+| Action             | Keybinding     | Description                                  |
+|--------------------+----------------+----------------------------------------------|
+| =jot-save-and-hide=  | ~C-c C-c~        | Save buffer modifications and hide popup.    |
+| =jot-unlink-session= | ~C-c C-k~        | Unlink note from active workspace / session. |
+| =jot-find-note=      | ~C-c C-j~        | Switch or create another note.               |
+| =jot-hide=           | ~q~ / ~ESC~ (Evil) | Hide popup and return focus to main frame.   |
+| =jot-increase-size=  | ~M-+~ / ~M-=~      | Enlarge popup dimensions by step delta.      |
+| =jot-decrease-size=  | ~M--~ / ~M-_~      | Shrink popup dimensions by step delta.       |
+| =jot-reset-size=     | ~M-r~            | Reset popup dimensions to default.           |
+
+** Configuration Reference
+
+All settings can be customized via =M-x customize-group RET jot RET=:
+
+| Variable                  | Default Value                 | Type / Allowed Values                | Description                                                  |
+|---------------------------+-------------------------------+--------------------------------------+--------------------------------------------------------------|
+| ~jot-dir~                 | ~"~/.local/share/tmux-jot"~      | directory string                     | Directory where note files are stored. Shared with ~tmux-jot~. |
+| ~jot-session-dir~           | ~nil~ (~jot-dir/.sessions~)       | ~nil~ or directory string              | Directory for per-session symlinks.                          |
+| ~jot-extension~             | ~"org"~                         | string (~"org"~, ~"md"~, ~"txt"~)          | File extension for newly created notes.                      |
+| ~jot-default-mode~          | ~'org-mode~                     | function symbol                      | Default major mode used for note buffers.                    |
+| ~jot-session-backend~       | ~'auto~                         | ~'auto~, ~'persp~, ~'tab-bar~, ~'project~    | Backend for active workspace name detection.                 |
+| ~jot-sort-notes~            | ~nil~                           | ~nil~ (by mtime) or ~t~ (alphabetical)   | Sorting order in note pickers.                               |
+| ~jot-popup-width~           | ~0.40~                          | float (fraction) or integer (pixels) | Base width of the floating child frame.                      |
+| ~jot-popup-height~          | ~0.50~                          | float (fraction) or integer (pixels) | Base height of the floating child frame.                     |
+| ~jot-popup-x~               | ~'right~                        | ~'right~, ~'left~, ~'center~, float, pixel | Horizontal anchor or offset on parent frame.                 |
+| ~jot-popup-y~               | ~0~                             | ~'top~, ~'bottom~, ~'center~, float, pixel | Vertical anchor or offset on parent frame.                   |
+| ~jot-border-width~          | ~2~                             | integer (pixels)                     | Border width of the child frame.                             |
+| ~jot-internal-border-width~ | ~1~                             | integer (pixels)                     | Internal border width around note buffer.                    |
+| ~jot-border-color~          | ~nil~                           | ~nil~ (auto from theme) or hex string  | Child frame border color.                                    |
+| ~jot-resize-step~           | ~0.05~                          | float fraction                       | Percentage step added/subtracted during dynamic resizing.    |
+| ~jot-icons~                 | ~t~                             | boolean                              | Whether to render icons in header-lines and prompts.         |
+| ~jot-title-icon~            | ~"📌"~                          | string                               | Icon displayed in note header-lines.                         |
+| ~jot-picker-icon~           | ~"📝"~                          | string                               | Icon displayed in note picker prompts.                       |
+| ~jot-search-icon~           | ~"🔎"~                          | string                               | Icon displayed in search prompts.                            |
+| ~jot-title-template~        | ~" {icon} {note} [{session}] "~ | string template                      | Format string for floating frame header-line.                |
+
+* Storage Model
+
+Notes are regular plain text files stored directly in =jot-dir=:
+
+#+begin_src text
+~/.local/share/tmux-jot/
+├── work-plan.org
+├── dotfiles-todo.org
+├── scratch.org
+└── .sessions/
+    ├── dotfiles.org -> ../dotfiles-todo.org
+    └── work.org     -> ../work-plan.org
+#+end_src
+
+* License
+
+GPL-3.0-or-later. See =LICENSE= for details.
