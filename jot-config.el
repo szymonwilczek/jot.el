@@ -93,11 +93,11 @@ Can be `top', `bottom', `center', float fraction, or pixel offset."
   :type 'integer
   :group 'jot)
 
-(defcustom jot-border-color "#b38d59"
+(defcustom jot-border-color nil
   "Color string for the floating child frame border.
-When nil, inherits the active theme highlight or link color."
-  :type '(choice (string :tag "Hex color")
-                 (const :tag "Theme default" nil))
+When nil (default), dynamically inherits the active theme border/keyword color."
+  :type '(choice (const :tag "Active theme color (auto)" nil)
+                 (string :tag "Custom hex color"))
   :group 'jot)
 
 (defcustom jot-resize-step 0.05
@@ -146,7 +146,7 @@ When nil, inherits the active theme highlight or link color."
   :group 'jot)
 
 (defface jot-border-face
-  '((t :background "#b38d59"))
+  '((t :inherit (child-frame-border font-lock-keyword-face highlight)))
   "Face used for the child frame border."
   :group 'jot)
 

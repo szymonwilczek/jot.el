@@ -77,15 +77,25 @@
               (_ 0))))
     (list :left x :top y :width w :height h)))
 
+(defun jot--resolve-border-color ()
+  "Dynamically resolve border color from `jot-border-color' or active theme faces."
+  (or jot-border-color
+      (face-background 'child-frame-border nil t)
+      (face-foreground 'child-frame-border nil t)
+      (face-foreground 'jot-border-face nil t)
+      (face-background 'jot-border-face nil t)
+      (face-foreground 'font-lock-keyword-face nil t)
+      (face-foreground 'font-lock-function-name-face nil t)
+      (face-foreground 'highlight nil t)
+      (face-foreground 'font-lock-constant-face nil t)
+      (face-foreground 'default nil t)))
+
 (defun jot--frame-parameters (parent)
   "Generate frame parameter alist for child frame anchored to PARENT."
   (let* ((geom (jot--calculate-frame-geometry parent))
          (bg (face-background 'default nil t))
          (fg (face-foreground 'default nil t))
-         (bcolor (or jot-border-color
-                     (face-background 'jot-border-face nil t)
-                     (face-foreground 'font-lock-keyword-face nil t)
-                     "#b38d59")))
+         (bcolor (jot--resolve-border-color)))
     `((parent-frame . ,parent)
       (undecorated . t)
       (minibuffer . nil)
@@ -123,9 +133,7 @@
   "Create or update floating child frame on PARENT displaying BUFFER."
   (let* ((root-parent (jot--root-parent-frame (or parent (frame-parent jot--frame) (selected-frame))))
          (params (jot--frame-parameters root-parent))
-         (bcolor (or jot-border-color
-                     (face-background 'jot-border-face nil t)
-                     "#b38d59")))
+         (bcolor (jot--resolve-border-color)))
     (if (frame-live-p jot--frame)
         (progn
           (modify-frame-parameters jot--frame params)
@@ -133,9 +141,9 @@
           (make-frame-visible jot--frame))
       (setq jot--frame (make-frame params))
       (set-window-buffer (frame-root-window jot--frame) buffer))
-    (when (facep 'child-frame-border)
+    (when (and bcolor (facep 'child-frame-border))
       (set-face-background 'child-frame-border bcolor jot--frame))
-    (when (facep 'internal-border)
+    (when (and bcolor (facep 'internal-border))
       (set-face-background 'internal-border bcolor jot--frame))
     (select-frame-set-input-focus jot--frame)
     jot--frame))
