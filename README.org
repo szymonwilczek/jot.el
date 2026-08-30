@@ -97,7 +97,7 @@ All settings can be customized via =M-x customize-group RET jot RET=:
 
 | Variable                  | Default Value                 | Type / Allowed Values                | Description                                                  |
 |---------------------------+-------------------------------+--------------------------------------+--------------------------------------------------------------|
-| ~jot-dir~                 | ~"~/.local/share/tmux-jot"~      | directory string                     | Directory where note files are stored. Shared with ~tmux-jot~. |
+| ~jot-dir~                   | ~"~/.local/share/tmux-jot"~      | directory string                     | Directory where note files are stored. Shared with ~tmux-jot~. |
 | ~jot-session-dir~           | ~nil~ (~jot-dir/.sessions~)       | ~nil~ or directory string              | Directory for per-session symlinks.                          |
 | ~jot-extension~             | ~"org"~                         | string (~"org"~, ~"md"~, ~"txt"~)          | File extension for newly created notes.                      |
 | ~jot-default-mode~          | ~'org-mode~                     | function symbol                      | Default major mode used for note buffers.                    |

@@ -88,8 +88,8 @@ Can be `top', `bottom', `center', float fraction, or pixel offset."
   :type 'integer
   :group 'jot)
 
-(defcustom jot-internal-border-width 8
-  "Internal padding in pixels around the note buffer."
+(defcustom jot-internal-border-width 1
+  "Internal border width in pixels around the note buffer."
   :type 'integer
   :group 'jot)
 

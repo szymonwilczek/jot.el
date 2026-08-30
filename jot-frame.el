@@ -97,7 +97,8 @@
       (width . (text-pixels . ,(plist-get geom :width)))
       (height . (text-pixels . ,(plist-get geom :height)))
       (internal-border-width . ,jot-internal-border-width)
-      (border-width . ,jot-border-width)
+      (child-frame-border-width . ,jot-border-width)
+      (border-width . 0)
       (border-color . ,bcolor)
       (background-color . ,bg)
       (foreground-color . ,fg)
@@ -121,7 +122,10 @@
 (defun jot--create-or-update-frame (buffer parent)
   "Create or update floating child frame on PARENT displaying BUFFER."
   (let* ((root-parent (jot--root-parent-frame (or parent (frame-parent jot--frame) (selected-frame))))
-         (params (jot--frame-parameters root-parent)))
+         (params (jot--frame-parameters root-parent))
+         (bcolor (or jot-border-color
+                     (face-background 'jot-border-face nil t)
+                     "#b38d59")))
     (if (frame-live-p jot--frame)
         (progn
           (modify-frame-parameters jot--frame params)
@@ -129,6 +133,10 @@
           (make-frame-visible jot--frame))
       (setq jot--frame (make-frame params))
       (set-window-buffer (frame-root-window jot--frame) buffer))
+    (when (facep 'child-frame-border)
+      (set-face-background 'child-frame-border bcolor jot--frame))
+    (when (facep 'internal-border)
+      (set-face-background 'internal-border bcolor jot--frame))
     (select-frame-set-input-focus jot--frame)
     jot--frame))
 
