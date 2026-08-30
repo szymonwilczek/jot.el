@@ -92,5 +92,10 @@
           (should-not (file-exists-p (jot--session-link-path session))))
       (delete-directory temp-dir t))))
 
+(ert-deftest jot-test-root-parent-frame ()
+  "Test root parent frame resolution."
+  (let ((current (selected-frame)))
+    (should (eq (jot--root-parent-frame current) current))))
+
 (provide 'test-jot)
 ;;; test-jot.el ends here

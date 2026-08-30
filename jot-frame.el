@@ -106,9 +106,19 @@
       (no-special-glyphs . t)
       (keep-ratio . nil))))
 
+(defun jot--root-parent-frame (&optional frame)
+  "Return the non-child root parent frame of FRAME (or selected frame)."
+  (let ((f (or frame (selected-frame))))
+    (while (and (frame-live-p f) (frame-parent f))
+      (setq f (frame-parent f)))
+    (if (and (frame-live-p f) (not (frame-parent f)))
+        f
+      (selected-frame))))
+
 (defun jot--create-or-update-frame (buffer parent)
   "Create or update floating child frame on PARENT displaying BUFFER."
-  (let ((params (jot--frame-parameters parent)))
+  (let* ((root-parent (jot--root-parent-frame (or parent (frame-parent jot--frame) (selected-frame))))
+         (params (jot--frame-parameters root-parent)))
     (if (frame-live-p jot--frame)
         (progn
           (modify-frame-parameters jot--frame params)

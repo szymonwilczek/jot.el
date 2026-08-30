@@ -22,7 +22,7 @@
 Optionally associate with NOTE-NAME, SESSION-NAME, and create LINK when non-nil."
   (let* ((session (or session-name (jot-current-session-name)))
          (note (or note-name (jot--note-name-from-file file-path)))
-         (parent (selected-frame)))
+         (parent (jot--root-parent-frame (selected-frame))))
     (when link
       (jot-link-note-to-session file-path session))
     (setq jot--active-note note
