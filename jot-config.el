@@ -83,7 +83,7 @@ Can be `top', `bottom', `center', float fraction, or pixel offset."
                  (const :tag "Centered" center))
   :group 'jot)
 
-(defcustom jot-border-width 1
+(defcustom jot-border-width 2
   "Border width in pixels for the floating child frame."
   :type 'integer
   :group 'jot)
