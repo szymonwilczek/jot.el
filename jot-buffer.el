@@ -65,6 +65,9 @@
       (unless (eq major-mode jot-default-mode)
         (funcall jot-default-mode))
       (setq-local header-line-format hdr)
+      (setq-local tab-line-format nil)
+      (when (fboundp 'tab-line-mode)
+        (tab-line-mode -1))
       (jot-buffer-mode 1))
     buf))
 
