@@ -3,6 +3,11 @@
 #+LANGUAGE: en
 #+OPTIONS: toc:nil num:nil
 
+#+HTML: <div align="center">
+#+HTML:   <img src="assets/preview.gif" alt="jot.el preview" width="100%"/>
+#+HTML:   <br/><br/>
+#+HTML: </div>
+
 I spend most of my time in the terminal, and I use [[https://github.com/szymonwilczek/tmux-jot][tmux-jot]] every single day. Hitting a single shortcut to bring up a quick scratchpad right over my workspace - without messing up my pane layout or switching windows - is just too convenient to give up. I know that Emacs probably has multiple ways to do that, but I'm just too used to doing it this way. It was easier to port this plugin from tmux to Emacs than learning to do that properly.
 
 =jot.el= is the GNU Emacs reincarnation of that workflow. It brings up the scratchpad in a floating child frame, works cleanly with Org-mode, and shares the same note storage with [[https://github.com/szymonwilczek/tmux-jot][tmux-jot]]. If that sounds like something you'd use, feel free to give it a spin.
