@@ -47,43 +47,81 @@
 (defun jot--note-path (note-name)
   "Return the absolute file path for NOTE-NAME in `jot-dir'."
   (jot--ensure-storage)
-  (let* ((base (jot--safe-name note-name))
-         (ext (jot--normalize-extension jot-extension)))
+  (let* ((trimmed (string-trim (or note-name "")))
+         (has-ext (file-name-extension trimmed))
+         (base (jot--safe-name (if has-ext (file-name-sans-extension trimmed) trimmed)))
+         (ext (jot--normalize-extension (or has-ext jot-extension))))
     (expand-file-name (format "%s.%s" base ext) (expand-file-name jot-dir))))
 
-(defun jot--session-link-path (session-name)
-  "Return the symlink file path for SESSION-NAME."
+(defun jot--session-link-path (session-name &optional ext)
+  "Return the symlink file path for SESSION-NAME with optional EXT."
   (jot--ensure-storage)
   (let* ((safe (jot--safe-name session-name))
-         (ext (jot--normalize-extension jot-extension)))
-    (expand-file-name (format "%s.%s" safe ext) (jot--session-dir))))
+         (extension (jot--normalize-extension (or ext jot-extension))))
+    (expand-file-name (format "%s.%s" safe extension) (jot--session-dir))))
+
+(defun jot--find-session-links (session-name)
+  "Return a list of all existing symlinks in session directory.
+Matches files for SESSION-NAME."
+  (jot--ensure-storage)
+  (let* ((sdir (jot--session-dir))
+         (safe (jot--safe-name session-name))
+         (results nil))
+    (when (file-directory-p sdir)
+      (dolist (f (directory-files sdir t directory-files-no-dot-files-regexp))
+        (when (or (string= (file-name-base f) safe)
+                  (string= (file-name-nondirectory f) safe))
+          (push f results))))
+    (nreverse results)))
 
 (defun jot-session-linked-file (&optional session-name)
   "Return the target note file path linked to SESSION-NAME (or current session)."
   (let* ((session (or session-name (jot-current-session-name)))
-         (link (jot--session-link-path session)))
-    (when (file-symlink-p link)
-      (let ((target (file-truename link)))
-        (when (file-exists-p target)
-          target)))))
+         (primary (jot--session-link-path session)))
+    (if (and (file-symlink-p primary)
+             (file-exists-p (file-truename primary)))
+        (file-truename primary)
+      (let ((links (jot--find-session-links session))
+            (target nil))
+        (while (and links (not target))
+          (let ((l (pop links)))
+            (when (file-symlink-p l)
+              (let ((truename (file-truename l)))
+                (when (file-exists-p truename)
+                  (setq target truename))))))
+        target))))
 
 (defun jot-link-note-to-session (file-path &optional session-name)
-  "Link note FILE-PATH to SESSION-NAME (or current session)."
+  "Link note FILE-PATH to SESSION-NAME (or current session).
+Removes previous session links for SESSION-NAME first for clean replacement."
   (jot--ensure-storage)
   (let* ((session (or session-name (jot-current-session-name)))
-         (link (jot--session-link-path session)))
-    (when (file-exists-p link)
-      (delete-file link))
-    (make-symbolic-link (expand-file-name file-path) link t)))
+         (target-file (expand-file-name file-path))
+         (target-ext (file-name-extension target-file))
+         (link (jot--session-link-path session (or target-ext jot-extension))))
+
+    ;; remove all existing links matching this session name to avoid duplicate links
+    (dolist (old-link (jot--find-session-links session))
+      (when (or (file-exists-p old-link) (file-symlink-p old-link))
+        (delete-file old-link)))
+    (make-symbolic-link target-file link t)))
 
 (defun jot-unlink-session (&optional session-name)
-  "Remove the note link for SESSION-NAME (or current session)."
+  "Remove all note links for SESSION-NAME (or current session)."
   (interactive)
-  (let* ((session (or session-name (jot-current-session-name)))
-         (link (jot--session-link-path session)))
-    (when (file-exists-p link)
-      (delete-file link)
-      (message "Unlinked note for session '%s'" session))))
+  (jot--ensure-storage)
+  (let* ((session (or session-name
+                      (and (bound-and-true-p jot-buffer-mode)
+                           (bound-and-true-p jot--buffer-session))
+                      (jot-current-session-name)))
+         (links (jot--find-session-links session)))
+    (if links
+        (progn
+          (dolist (link links)
+            (when (or (file-exists-p link) (file-symlink-p link))
+              (delete-file link)))
+          (message "Unlinked note for session '%s'" session))
+      (message "No link found for session '%s'" session))))
 
 (defun jot--note-name-from-file (file-path)
   "Extract base note name from FILE-PATH without extension."

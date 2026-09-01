@@ -38,17 +38,18 @@
 ;;;###autoload
 (defun jot-toggle ()
   "Toggle the floating jot note for the current workspace / perspective.
-If the popup is already visible, hide it.
-If a note is linked to the current session, open it.
-If no note is linked, prompt to select or create one via `jot-find-note'."
+If the popup is already visible for the current session, hide it.
+If the popup is visible for a different session or not visible, open the note
+for the current session (or prompt to select/create one)."
   (interactive)
-  (if (jot--frame-alive-p)
-      (jot-hide)
-    (let* ((session (jot-current-session-name))
-           (linked (jot-session-linked-file session)))
-      (if (and linked (file-exists-p linked))
-          (jot-open-note linked (jot--note-name-from-file linked) session nil)
-        (jot-find-note session)))))
+  (let* ((session (jot-current-session-name))
+         (frame-alive (jot--frame-alive-p)))
+    (if (and frame-alive (string= session (or jot--active-session "")))
+        (jot-hide)
+      (let ((linked (jot-session-linked-file session)))
+        (if (and linked (file-exists-p linked))
+            (jot-open-note linked (jot--note-name-from-file linked) session nil)
+          (jot-find-note session))))))
 
 (defalias 'jot #'jot-toggle)
 

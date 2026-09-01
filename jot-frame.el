@@ -97,6 +97,7 @@
          (fg (face-foreground 'default nil t))
          (bcolor (jot--resolve-border-color)))
     `((parent-frame . ,parent)
+      (jot-parent-frame . ,parent)
       (undecorated . t)
       (minibuffer . nil)
       (tab-bar-lines . 0)
@@ -123,6 +124,11 @@
 (defun jot--root-parent-frame (&optional frame)
   "Return the non-child root parent frame of FRAME (or selected frame)."
   (let ((f (or frame (selected-frame))))
+    (when (and (frame-live-p f)
+               (or (eq f jot--frame) (frame-parameter f 'jot-parent-frame)))
+      (let ((stored-parent (frame-parameter f 'jot-parent-frame)))
+        (when (and stored-parent (frame-live-p stored-parent))
+          (setq f stored-parent))))
     (while (and (frame-live-p f) (frame-parent f))
       (setq f (frame-parent f)))
     (if (and (frame-live-p f) (not (frame-parent f)))
@@ -152,7 +158,7 @@
   "Hide the active floating jot frame and return focus to main window."
   (interactive)
   (when (frame-live-p jot--frame)
-    (let ((parent (frame-parent jot--frame)))
+    (let ((parent (jot--root-parent-frame jot--frame)))
       (delete-frame jot--frame)
       (setq jot--frame nil)
       (when (frame-live-p parent)

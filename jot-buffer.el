@@ -21,6 +21,12 @@
 (declare-function jot-reset-size "jot-size" ())
 (declare-function evil-local-set-key "evil-core" (state key def))
 
+(defvar-local jot--buffer-session nil
+  "Session name associated with this jot note buffer.")
+
+(defvar-local jot--buffer-note nil
+  "Note name associated with this jot note buffer.")
+
 (defun jot--format-header (note-name session-name file-path)
   "Format header-line string for NOTE-NAME in SESSION-NAME at FILE-PATH."
   (let* ((icon (if jot-icons (or jot-title-icon "") ""))
@@ -64,6 +70,8 @@
     (with-current-buffer buf
       (unless (eq major-mode jot-default-mode)
         (funcall jot-default-mode))
+      (setq-local jot--buffer-session session-name)
+      (setq-local jot--buffer-note note-name)
       (setq-local header-line-format hdr)
       (setq-local tab-line-format nil)
       (when (fboundp 'tab-line-mode)

@@ -20,6 +20,7 @@
   (interactive)
   (let* ((session (jot-current-session-name))
          (link (jot--session-link-path session))
+         (all-links (jot--find-session-links session))
          (linked-file (jot-session-linked-file session))
          (all-notes (jot--all-notes))
          (buf (get-buffer-create "*jot-doctor*")))
@@ -39,7 +40,8 @@
         (insert "Paths\n")
         (insert (format "  %-22s %s (exists=%s)\n" "jot-dir" jot-dir (if (file-directory-p jot-dir) "yes" "no")))
         (insert (format "  %-22s %s (exists=%s)\n" "session-dir" (jot--session-dir) (if (file-directory-p (jot--session-dir)) "yes" "no")))
-        (insert (format "  %-22s %s\n" "session link" link))
+        (insert (format "  %-22s %s\n" "primary link" link))
+        (insert (format "  %-22s %s\n" "session links" (if all-links (string-join (mapcar #'file-name-nondirectory all-links) ", ") "none")))
         (insert (format "  %-22s %s\n\n" "linked note" (or linked-file "none")))
 
         (insert "Geometry and Appearance\n")

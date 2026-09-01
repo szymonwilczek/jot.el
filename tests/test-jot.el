@@ -92,6 +92,76 @@
           (should-not (file-exists-p (jot--session-link-path session))))
       (delete-directory temp-dir t))))
 
+(ert-deftest jot-test-note-path ()
+  "Test note path construction with various extensions."
+  (let ((jot-dir "/tmp/test-jot")
+        (jot-extension "org"))
+    (should (string= (jot--note-path "todo") "/tmp/test-jot/todo.org"))
+    (should (string= (jot--note-path "todo.org") "/tmp/test-jot/todo.org"))
+    (should (string= (jot--note-path "todo.md") "/tmp/test-jot/todo.md"))))
+
+(ert-deftest jot-test-session-replacement ()
+  "Test replacing a session note with another note (overwriting symlink cleanly)."
+  (let* ((temp-dir (make-temp-file "jot-replace-test-" t))
+         (jot-dir temp-dir)
+         (jot-session-dir nil)
+         (jot-extension "org")
+         (note1 (expand-file-name "first-note.org" temp-dir))
+         (note2 (expand-file-name "second-note.md" temp-dir))
+         (note3 (expand-file-name "third-note.org" temp-dir))
+         (session "my-perspective"))
+    (unwind-protect
+        (progn
+          (write-region "Note 1" nil note1 nil 'silent)
+          (write-region "Note 2" nil note2 nil 'silent)
+          (write-region "Note 3" nil note3 nil 'silent)
+
+          ;; link note1 to session
+          (jot-link-note-to-session note1 session)
+          (should (string= (jot-session-linked-file session) note1))
+
+          ;; replace with note2 (.md)
+          (jot-link-note-to-session note2 session)
+          (should (string= (jot-session-linked-file session) note2))
+          (should (= (length (jot--find-session-links session)) 1))
+
+          ;; replace with note3 (.org)
+          (jot-link-note-to-session note3 session)
+          (should (string= (jot-session-linked-file session) note3))
+          (should (= (length (jot--find-session-links session)) 1))
+
+          ;; unlink removes all links for session
+          (jot-unlink-session session)
+          (should-not (jot-session-linked-file session))
+          (should (= (length (jot--find-session-links session)) 0)))
+      (delete-directory temp-dir t))))
+
+(ert-deftest jot-test-cross-extension-discovery ()
+  "Test discovering session link created with different extension (tmux-jot)."
+  (let* ((temp-dir (make-temp-file "jot-cross-test-" t))
+         (jot-dir temp-dir)
+         (jot-session-dir nil)
+         (jot-extension "org")
+         (note-md (expand-file-name "from-tmux.md" temp-dir))
+         (session "tmux-session"))
+    (unwind-protect
+        (progn
+          (write-region "tmux content" nil note-md nil 'silent)
+          ;; simulate tmux-jot creating a .md session link
+          (jot--ensure-storage)
+          (make-symbolic-link note-md (expand-file-name "tmux-session.md" (jot--session-dir)) t)
+          ;; verify jot.el finds the .md session link even though jot-extension is .org
+          (should (string= (jot-session-linked-file session) note-md))
+
+          ;; replace it with a new note in Emacs
+          (let ((note-org (expand-file-name "from-emacs.org" temp-dir)))
+            (write-region "emacs content" nil note-org nil 'silent)
+            (jot-link-note-to-session note-org session)
+            (should (string= (jot-session-linked-file session) note-org))
+            ;; verify old .md link was removed
+            (should-not (file-exists-p (expand-file-name "tmux-session.md" (jot--session-dir))))))
+      (delete-directory temp-dir t))))
+
 (ert-deftest jot-test-root-parent-frame ()
   "Test root parent frame resolution."
   (let ((current (selected-frame)))

@@ -20,9 +20,20 @@
 (defun jot-open-note (file-path &optional note-name session-name link)
   "Open note FILE-PATH in the floating frame.
 Optionally associate with NOTE-NAME, SESSION-NAME, and create LINK when non-nil."
-  (let* ((session (or session-name (jot-current-session-name)))
+  (let* ((session (or session-name
+                      (and (bound-and-true-p jot-buffer-mode)
+                           (bound-and-true-p jot--buffer-session))
+                      (jot-current-session-name)))
          (note (or note-name (jot--note-name-from-file file-path)))
          (parent (jot--root-parent-frame (selected-frame))))
+
+    ;; save active jot buffer before switching if modified
+    (when (and (frame-live-p jot--frame)
+               (window-buffer (frame-root-window jot--frame)))
+      (with-current-buffer (window-buffer (frame-root-window jot--frame))
+        (when (and (bound-and-true-p jot-buffer-mode)
+                   (buffer-modified-p))
+          (save-buffer))))
     (when link
       (jot-link-note-to-session file-path session))
     (setq jot--active-note note
@@ -35,7 +46,10 @@ Optionally associate with NOTE-NAME, SESSION-NAME, and create LINK when non-nil.
 Selecting an existing note links it to SESSION-NAME (or current workspace).
 Entering a new name creates the note and links it."
   (interactive)
-  (let* ((session (or session-name (jot-current-session-name)))
+  (let* ((session (or session-name
+                      (and (bound-and-true-p jot-buffer-mode)
+                           (bound-and-true-p jot--buffer-session))
+                      (jot-current-session-name)))
          (notes (jot--all-notes))
          (icon (if jot-icons (or jot-picker-icon "") ""))
          (prompt (replace-regexp-in-string "{icon}" icon jot-picker-prompt))
@@ -46,7 +60,7 @@ Entering a new name creates the note and links it."
              (file (or existing (jot--note-path choice))))
         (unless (file-exists-p file)
           (write-region "" nil file nil 'silent))
-        (jot-open-note file choice session t)))))
+        (jot-open-note file (jot--note-name-from-file file) session t)))))
 
 (provide 'jot-picker)
 ;;; jot-picker.el ends here
