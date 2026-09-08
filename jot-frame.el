@@ -145,9 +145,8 @@
           (modify-frame-parameters jot--frame params)
           (set-window-buffer (frame-root-window jot--frame) buffer)
           (make-frame-visible jot--frame))
-      (setq jot--frame (make-frame (append '((visibility . nil)) params)))
-      (set-window-buffer (frame-root-window jot--frame) buffer)
-      (make-frame-visible jot--frame))
+      (setq jot--frame (make-frame params))
+      (set-window-buffer (frame-root-window jot--frame) buffer))
     (when (and bcolor (facep 'child-frame-border))
       (set-face-background 'child-frame-border bcolor jot--frame))
     (when (and bcolor (facep 'internal-border))
@@ -160,7 +159,20 @@
   (interactive)
   (when (frame-live-p jot--frame)
     (let ((parent (jot--root-parent-frame jot--frame)))
-      (make-frame-invisible jot--frame)
+      ;; preserve clipboard ownership before destroying child frame
+      (when (and kill-ring (car kill-ring))
+        (let ((text (current-kill 0 t)))
+          (when (and text (stringp text))
+            (cond
+             ((and (getenv "WAYLAND_DISPLAY") (executable-find "wl-copy"))
+              (call-process "wl-copy" nil 0 nil text))
+             ((and (getenv "DISPLAY") (executable-find "xclip"))
+              (call-process "xclip" nil 0 nil "-selection" "clipboard" text)))
+            (when (frame-live-p parent)
+              (with-selected-frame parent
+                (gui-select-text text))))))
+      (delete-frame jot--frame)
+      (setq jot--frame nil)
       (when (frame-live-p parent)
         (select-frame-set-input-focus parent)))))
 
