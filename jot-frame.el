@@ -137,7 +137,7 @@
 
 (defun jot--create-or-update-frame (buffer parent)
   "Create or update floating child frame on PARENT displaying BUFFER."
-  (let* ((root-parent (jot--root-parent-frame (or parent (frame-parent jot--frame) (selected-frame))))
+  (let* ((root-parent (jot--root-parent-frame (or parent (selected-frame))))
          (params (jot--frame-parameters root-parent))
          (bcolor (jot--resolve-border-color)))
     (if (frame-live-p jot--frame)
@@ -145,8 +145,9 @@
           (modify-frame-parameters jot--frame params)
           (set-window-buffer (frame-root-window jot--frame) buffer)
           (make-frame-visible jot--frame))
-      (setq jot--frame (make-frame params))
-      (set-window-buffer (frame-root-window jot--frame) buffer))
+      (setq jot--frame (make-frame (append '((visibility . nil)) params)))
+      (set-window-buffer (frame-root-window jot--frame) buffer)
+      (make-frame-visible jot--frame))
     (when (and bcolor (facep 'child-frame-border))
       (set-face-background 'child-frame-border bcolor jot--frame))
     (when (and bcolor (facep 'internal-border))
@@ -159,10 +160,24 @@
   (interactive)
   (when (frame-live-p jot--frame)
     (let ((parent (jot--root-parent-frame jot--frame)))
-      (delete-frame jot--frame)
-      (setq jot--frame nil)
+      (make-frame-invisible jot--frame)
       (when (frame-live-p parent)
         (select-frame-set-input-focus parent)))))
+
+(defun jot--refresh-frame-theme (&rest _)
+  "Refresh active floating jot child frame colors to match current theme."
+  (when (frame-live-p jot--frame)
+    (let* ((parent (jot--root-parent-frame jot--frame))
+           (params (jot--frame-parameters parent))
+           (bcolor (jot--resolve-border-color)))
+      (modify-frame-parameters jot--frame params)
+      (when (and bcolor (facep 'child-frame-border))
+        (set-face-background 'child-frame-border bcolor jot--frame))
+      (when (and bcolor (facep 'internal-border))
+        (set-face-background 'internal-border bcolor jot--frame)))))
+
+(when (boundp 'enable-theme-functions)
+  (add-hook 'enable-theme-functions #'jot--refresh-frame-theme))
 
 (provide 'jot-frame)
 ;;; jot-frame.el ends here
