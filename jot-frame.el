@@ -99,7 +99,7 @@
     `((parent-frame . ,parent)
       (jot-parent-frame . ,parent)
       (undecorated . t)
-      (minibuffer . nil)
+      (minibuffer . ,(minibuffer-window parent))
       (tab-bar-lines . 0)
       (tool-bar-lines . 0)
       (menu-bar-lines . 0)
