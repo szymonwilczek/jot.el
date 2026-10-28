@@ -167,5 +167,13 @@
   (let ((current (selected-frame)))
     (should (eq (jot--root-parent-frame current) current))))
 
+(ert-deftest jot-test-frame-uses-parent-minibuffer ()
+  "Test the child frame reads in the minibuffer of its parent frame.
+With (minibuffer . nil) it would read in `default-minibuffer-frame',
+which can be a hidden frame; tests/sway-minibuffer-test.sh shows it."
+  (let ((parent (selected-frame)))
+    (should (eq (alist-get 'minibuffer (jot--frame-parameters parent))
+                (minibuffer-window parent)))))
+
 (provide 'test-jot)
 ;;; test-jot.el ends here
